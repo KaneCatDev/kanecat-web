@@ -80,7 +80,7 @@ const translations = {
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
-            built: "Built with React · Deployed soon on Cloudflare Pages",
+            built: "Built with React",
         },
     },
 
@@ -154,7 +154,7 @@ const translations = {
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
-            built: "Creado con React · Próximamente desplegado en Cloudflare Pages",
+            built: "Creado con React",
         },
     },
 };
