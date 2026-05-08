@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import logoImage from "./assets/logo.png";
 
 /*
   Portfolio principal de KaneCatDev.
@@ -16,9 +17,9 @@ const translations = {
         },
         hero: {
             eyebrow: "Apps · Games · AI Systems",
-            title: "Building apps, games and IA with personality.",
+            title: "Building apps, games and AI systems with personality.",
             description:
-                "I am Kane, a developer focused on Android apps, videogames, automation, AI companion and experimental tools",
+                "I am Kane, a developer focused on Android apps, videogames, automation, AI companions and experimental tools.",
             primaryButton: "View projects",
             secondaryButton: "Contact me",
         },
@@ -52,7 +53,7 @@ const translations = {
                 status: "inProgress",
                 description:
                     "An experimental AI companion system connected to VRChat, voice, memory and OSC controls.",
-                tags: ["Python", "OSC", "AI", "TSS"],
+                tags: ["Python", "OSC", "AI", "TTS"],
             },
             {
                 title: "Hellies Bots",
@@ -91,7 +92,7 @@ const translations = {
         },
         hero: {
             eyebrow: "Apps · Juegos · Sistemas IA",
-            title: "Building apps, games and systems with personality.",
+            title: "Desarrollo apps, juegos y sistemas con personalidad.",
             description:
                 "Soy Kane, un desarrollador centrado en apps Android, videojuegos, automatización, compañeras IA y herramientas experimentales.",
             primaryButton: "Ver proyectos",
@@ -127,7 +128,7 @@ const translations = {
                 status: "inProgress",
                 description:
                     "Un sistema experimental de compañera IA conectado a VRChat, voz, memoria y controles OSC.",
-                tags: ["Python", "OSC", "IA", "TSS"],
+                tags: ["Python", "OSC", "IA", "TTS"],
             },
             {
                 title: "Hellies Bots",
@@ -140,7 +141,6 @@ const translations = {
         ],
         about: {
             eyebrow: "Sobre mí",
-            title: "Desarrollador con gusto por las interfaces oscuras.",
             description:
                 "Estudio desarrollo de software y creo proyectos relacionados con Android, backend, automatización, IA y videojuegos. Mi objetivo es crear software personal y de utilidad.",
         },
@@ -162,7 +162,7 @@ const translations = {
 const skills = [
     "Python",
     "Java",
-    "SpringBoot",
+    "Spring Boot",
     "Kotlin",
     "Android",
     "C#",
@@ -267,7 +267,11 @@ function App() {
                 <aside className="hero-card">
                     <div className="avatar-ring">
                         <div className="avatar-core">
-                            <span>K</span>
+                            <img
+                                src={logoImage}
+                                alt="KaneCatDev logo"
+                                className="avatar-image"
+                            />
                         </div>
                     </div>
 
@@ -295,8 +299,9 @@ function App() {
                                 <p className="project-type">{project.type}</p>
 
                                 <span
-                                    className={`project-status ${projectStatusClassNames[project.status] || "status-paused"
-                                        }`}
+                                    className={`project-status ${
+                                        projectStatusClassNames[project.status] || "status-paused"
+                                    }`}
                                 >
                                     {getProjectStatusLabel(project.status)}
                                 </span>
@@ -346,9 +351,6 @@ function App() {
             {/* Contacto */}
             <section id="contact" className="section contact-section">
                 <p className="eyebrow">{content.contact.eyebrow}</p>
-                <h2>{content.contact.title}</h2>
-
-                <p>{content.contact.description}</p>
 
                 <a className="button primary-button" href="mailto:contact@kanecat.dev">
                     {content.contact.button}
