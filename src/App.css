@@ -1,13 +1,14 @@
 :root {
-  --background: #09090b;
-  --background-lift: #101014;
-  --surface: #141418;
-  --surface-soft: #1d1d23;
-  --surface-card: rgba(20, 20, 24, 0.88);
-  --primary: #ff5aa8;
-  --primary-soft: #ffacd4;
-  --accent: #63d8c5;
-  --accent-warm: #ffc46b;
+  --background: #080307;
+  --background-lift: #150710;
+  --surface: #170b14;
+  --surface-soft: #22101d;
+  --surface-card: rgba(23, 8, 18, 0.9);
+  --primary: #ff2f91;
+  --primary-soft: #ff9fcb;
+  --accent: #ff3158;
+  --accent-cold: #7af2df;
+  --accent-warm: #ffbf66;
   --text: #f7f7f8;
   --muted: #a7aab4;
   --muted-strong: #d3d5dc;
@@ -33,8 +34,10 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    linear-gradient(130deg, rgba(255, 90, 168, 0.08), transparent 32%),
-    linear-gradient(220deg, rgba(99, 216, 197, 0.08), transparent 36%),
+    radial-gradient(circle at 18% 12%, rgba(255, 47, 145, 0.16), transparent 28%),
+    radial-gradient(circle at 82% 8%, rgba(255, 49, 88, 0.12), transparent 28%),
+    linear-gradient(130deg, rgba(255, 47, 145, 0.1), transparent 32%),
+    linear-gradient(220deg, rgba(122, 242, 223, 0.06), transparent 36%),
     repeating-linear-gradient(
       90deg,
       rgba(255, 255, 255, 0.035) 0,
@@ -58,7 +61,7 @@ button {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  padding: 28px;
+  padding: 24px 14px;
 }
 
 .page::before {
@@ -82,7 +85,7 @@ button {
 }
 
 .navbar {
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 14px 0;
   display: flex;
@@ -105,9 +108,17 @@ button {
   place-items: center;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--surface-soft), #0e0e11);
-  color: var(--primary-soft);
-  box-shadow: 0 14px 34px var(--shadow);
+  background: linear-gradient(135deg, #321023, #0e060c);
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(255, 47, 145, 0.14);
+}
+
+.brand-mark img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(255, 47, 145, 0.32));
 }
 
 .nav-actions {
@@ -166,7 +177,7 @@ button {
 }
 
 .hero {
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 82px auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1.22fr) minmax(280px, 0.62fr);
@@ -232,9 +243,9 @@ button {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--primary), #c72a68);
+  background: linear-gradient(135deg, var(--primary), #b90935);
   color: white;
-  box-shadow: 0 16px 34px rgba(255, 90, 168, 0.22);
+  box-shadow: 0 16px 34px rgba(255, 47, 145, 0.28);
 }
 
 .secondary-button {
@@ -245,8 +256,8 @@ button {
 
 .secondary-button:hover,
 .secondary-button:focus-visible {
-  border-color: rgba(99, 216, 197, 0.42);
-  background: rgba(99, 216, 197, 0.08);
+  border-color: rgba(255, 49, 88, 0.48);
+  background: rgba(255, 49, 88, 0.08);
 }
 
 .hero-card {
@@ -254,9 +265,9 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    linear-gradient(180deg, rgba(255, 47, 145, 0.13), rgba(255, 255, 255, 0.025)),
     var(--surface-card);
-  box-shadow: 0 24px 80px var(--shadow);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
   text-align: center;
 }
 
@@ -316,12 +327,81 @@ button {
   height: 9px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 18px rgba(99, 216, 197, 0.75);
+  background: var(--accent-cold);
+  box-shadow: 0 0 18px rgba(122, 242, 223, 0.75);
+}
+
+.profile-news {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.profile-news-heading {
+  color: var(--primary-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.profile-news-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-news-link {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 159, 203, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-news-link:hover,
+.profile-news-link:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 49, 88, 0.42);
+  background: rgba(255, 47, 145, 0.08);
+}
+
+.profile-news-link span {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.profile-news-link time,
+.profile-news-state {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.profile-news-state {
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+.profile-news-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 14px;
+  border-color: rgba(255, 159, 203, 0.26);
+  background: rgba(255, 47, 145, 0.1);
+  color: var(--primary-soft);
 }
 
 .section {
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 118px auto 0;
   scroll-margin-top: 24px;
 }
@@ -341,17 +421,11 @@ button {
   letter-spacing: 0;
 }
 
-.section-time {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
+  grid-template-columns: minmax(0, 390px);
+  justify-content: start;
+  gap: 20px;
 }
 
 .project-card {
@@ -371,16 +445,18 @@ button {
 
 .project-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(255, 172, 212, 0.34);
-  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 47, 145, 0.44);
+  box-shadow: 0 22px 56px rgba(255, 47, 145, 0.12);
 }
 
 .project-image {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
   display: block;
-  background: var(--surface-soft);
+  background:
+    linear-gradient(135deg, rgba(255, 47, 145, 0.12), rgba(122, 242, 223, 0.06)),
+    var(--surface-soft);
   border-bottom: 1px solid var(--border);
 }
 
@@ -424,8 +500,8 @@ button {
 
 .status-active {
   color: #96f4dc;
-  border-color: rgba(99, 216, 197, 0.36);
-  background: rgba(99, 216, 197, 0.12);
+  border-color: rgba(122, 242, 223, 0.36);
+  background: rgba(122, 242, 223, 0.12);
 }
 
 .status-development {
@@ -474,8 +550,80 @@ button {
   margin-top: auto;
   padding-top: 22px;
   display: flex;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
+}
+
+.project-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 159, 203, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--primary-soft);
+  font-size: 0.88rem;
+  font-weight: 900;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.project-info {
+  display: contents;
+}
+
+.project-info summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.project-info summary::-webkit-details-marker {
+  display: none;
+}
+
+.project-info-panel {
+  flex-basis: 100%;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(255, 159, 203, 0.28);
+  border-radius: 8px;
+  background: rgba(16, 4, 12, 0.98);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
+.project-info-panel span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.project-info-panel p {
+  margin: 0;
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.project-action:hover,
+.project-action:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 49, 88, 0.5);
+  background: rgba(255, 47, 145, 0.12);
+  color: var(--text);
+}
+
+.info-action {
+  border-color: rgba(255, 49, 88, 0.34);
+  background: rgba(255, 49, 88, 0.13);
 }
 
 .text-link {
@@ -492,8 +640,8 @@ button {
 
 .text-link:hover,
 .text-link:focus-visible {
-  color: var(--accent);
-  border-color: rgba(99, 216, 197, 0.54);
+  color: var(--accent-cold);
+  border-color: rgba(122, 242, 223, 0.54);
 }
 
 .news-list {
@@ -618,10 +766,10 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 28px;
-  border: 1px solid rgba(99, 216, 197, 0.26);
+  border: 1px solid rgba(255, 49, 88, 0.28);
   border-radius: 8px;
   background:
-    linear-gradient(110deg, rgba(99, 216, 197, 0.09), transparent 42%),
+    linear-gradient(110deg, rgba(255, 47, 145, 0.12), transparent 42%),
     rgba(20, 20, 24, 0.88);
 }
 
@@ -637,7 +785,7 @@ button {
 }
 
 .footer {
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 90px auto 0;
   padding: 28px 0 10px;
   display: flex;
@@ -670,7 +818,7 @@ button {
 
 @media (max-width: 720px) {
   .page {
-    padding: 20px;
+    padding: 18px 12px;
   }
 
   .navbar {
@@ -738,7 +886,7 @@ button {
 
 @media (max-width: 440px) {
   .page {
-    padding: 16px;
+    padding: 14px 10px;
   }
 
   .brand-mark {

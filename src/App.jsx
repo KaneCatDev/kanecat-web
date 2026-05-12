@@ -3,6 +3,10 @@ import "./App.css";
 import logoImage from "./assets/logo.png";
 
 const API_BASE_URL = "https://api.kanecat.dev";
+const CONTACT_EMAIL = "contact@kanecat.dev";
+const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    "Contacto desde kanecat.dev",
+)}&body=${encodeURIComponent("Hola KaneCatDev,\n\n")}`;
 
 const translations = {
     en: {
@@ -24,6 +28,8 @@ const translations = {
             title: "KaneCatDev",
             subtitle: "Developer profile",
             status: "Public project feed online",
+            latestNews: "Latest news",
+            moreNewsButton: "More news",
         },
         projectsSection: {
             eyebrow: "Public feed",
@@ -33,6 +39,7 @@ const translations = {
             error: "The public project feed could not be loaded right now.",
             featured: "Featured",
             standard: "Project",
+            infoButton: "Information",
             websiteButton: "Website",
             repoButton: "Repository",
         },
@@ -71,7 +78,7 @@ const translations = {
             title: "Want to build something?",
             description:
                 "I am open to project ideas, collaborations and technical conversations around apps, tools and game-adjacent systems.",
-            button: "contact@kanecat.dev",
+            button: CONTACT_EMAIL,
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
@@ -98,6 +105,8 @@ const translations = {
             title: "KaneCatDev",
             subtitle: "Perfil de desarrollador",
             status: "Feed público de proyectos activo",
+            latestNews: "Últimas novedades",
+            moreNewsButton: "Ver más novedades",
         },
         projectsSection: {
             eyebrow: "Feed público",
@@ -107,6 +116,7 @@ const translations = {
             error: "Ahora mismo no se pudo cargar el feed público de proyectos.",
             featured: "Destacado",
             standard: "Proyecto",
+            infoButton: "Información",
             websiteButton: "Web",
             repoButton: "Repositorio",
         },
@@ -145,7 +155,7 @@ const translations = {
             title: "¿Montamos algo?",
             description:
                 "Estoy abierto a ideas de proyectos, colaboraciones y conversaciones técnicas sobre apps, herramientas y sistemas alrededor de videojuegos.",
-            button: "contact@kanecat.dev",
+            button: CONTACT_EMAIL,
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
@@ -257,7 +267,6 @@ function App() {
     const [feed, setFeed] = useState({
         projects: [],
         news: [],
-        serverTime: "",
     });
     const [feedStatus, setFeedStatus] = useState("loading");
 
@@ -287,6 +296,7 @@ function App() {
 
     const isLoading = feedStatus === "loading";
     const hasError = feedStatus === "error";
+    const latestProfileNews = sortedNews.slice(0, 3);
 
     const getStatusLabel = (status) => {
         const normalizedStatus = normalizeStatus(status);
@@ -326,7 +336,6 @@ function App() {
                 setFeed({
                     projects: Array.isArray(data.projects) ? data.projects : [],
                     news: Array.isArray(data.news) ? data.news : [],
-                    serverTime: data.server_time || "",
                 });
                 setFeedStatus("ready");
             } catch (error) {
@@ -351,7 +360,9 @@ function App() {
         <main className="page">
             <header className="navbar">
                 <a className="brand" href="#top" aria-label="KaneCatDev">
-                    <span className="brand-mark">KC</span>
+                    <span className="brand-mark">
+                        <img src={logoImage} alt="" aria-hidden="true" />
+                    </span>
                     <span>KaneCatDev</span>
                 </a>
 
@@ -408,6 +419,53 @@ function App() {
                         <span className="status-dot"></span>
                         <span>{content.profile.status}</span>
                     </div>
+
+                    <div className="profile-news" aria-label={content.profile.latestNews}>
+                        <div className="profile-news-heading">
+                            <span>{content.profile.latestNews}</span>
+                        </div>
+
+                        {isLoading && (
+                            <p className="profile-news-state">{content.newsSection.loading}</p>
+                        )}
+
+                        {!isLoading && hasError && (
+                            <p className="profile-news-state">{content.newsSection.error}</p>
+                        )}
+
+                        {!isLoading && !hasError && latestProfileNews.length === 0 && (
+                            <p className="profile-news-state">{content.newsSection.empty}</p>
+                        )}
+
+                        {!isLoading && !hasError && latestProfileNews.length > 0 && (
+                            <div className="profile-news-list">
+                                {latestProfileNews.map((newsItem) => {
+                                    const newsDate = formatDate(
+                                        newsItem.published_at || newsItem.created_at,
+                                        language,
+                                    );
+                                    const hasNewsLink = isVisibleUrl(newsItem.link_url);
+
+                                    return (
+                                        <a
+                                            className="profile-news-link"
+                                            href={hasNewsLink ? newsItem.link_url.trim() : "#news"}
+                                            target={hasNewsLink ? "_blank" : undefined}
+                                            rel={hasNewsLink ? "noreferrer" : undefined}
+                                            key={newsItem.slug || newsItem.id}
+                                        >
+                                            <span>{newsItem.title}</span>
+                                            {newsDate && <time>{newsDate}</time>}
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <a className="button profile-news-button" href="#news">
+                            {content.profile.moreNewsButton}
+                        </a>
+                    </div>
                 </aside>
             </section>
 
@@ -417,11 +475,6 @@ function App() {
                         <p className="eyebrow">{content.projectsSection.eyebrow}</p>
                         <h2>{content.projectsSection.title}</h2>
                     </div>
-                    {feed.serverTime && (
-                        <time className="section-time" dateTime={feed.serverTime}>
-                            {formatDate(feed.serverTime, language)}
-                        </time>
-                    )}
                 </div>
 
                 {isLoading && (
@@ -482,9 +535,18 @@ function App() {
                                         <p>{project.description || project.summary}</p>
 
                                         <div className="card-actions">
+                                            <details className="project-info">
+                                                <summary className="project-action info-action">
+                                                    {content.projectsSection.infoButton}
+                                                </summary>
+                                                <div className="project-info-panel">
+                                                    <span>{getStatusLabel(project.status)}</span>
+                                                    <p>{project.description || project.summary}</p>
+                                                </div>
+                                            </details>
                                             {isVisibleUrl(project.website_url) && (
                                                 <a
-                                                    className="text-link"
+                                                    className="project-action"
                                                     href={project.website_url.trim()}
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -494,7 +556,7 @@ function App() {
                                             )}
                                             {isVisibleUrl(project.repo_url) && (
                                                 <a
-                                                    className="text-link"
+                                                    className="project-action"
                                                     href={project.repo_url.trim()}
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -617,7 +679,11 @@ function App() {
                     <p>{content.contact.description}</p>
                 </div>
 
-                <a className="button primary-button" href="mailto:contact@kanecat.dev">
+                <a
+                    className="button primary-button"
+                    href={CONTACT_MAILTO}
+                    aria-label={`Enviar correo a ${CONTACT_EMAIL}`}
+                >
                     {content.contact.button}
                 </a>
             </section>
