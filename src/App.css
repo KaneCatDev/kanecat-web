@@ -784,6 +784,32 @@ button {
   line-height: 1.75;
 }
 
+.contact-section .support-copy {
+  color: var(--primary-soft);
+  font-weight: 800;
+}
+
+.contact-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.kofi-button {
+  border-color: rgba(122, 242, 223, 0.36);
+  background: rgba(122, 242, 223, 0.1);
+  color: #b7fff2;
+}
+
+.kofi-button:hover,
+.kofi-button:focus-visible {
+  border-color: rgba(122, 242, 223, 0.58);
+  background: rgba(122, 242, 223, 0.16);
+  box-shadow: 0 16px 34px rgba(122, 242, 223, 0.12);
+}
+
 .footer {
   max-width: 1440px;
   margin: 90px auto 0;
@@ -813,6 +839,10 @@ button {
   .contact-section {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .contact-actions {
+    justify-content: flex-start;
   }
 }
 
@@ -899,6 +929,10 @@ button {
   }
 
   .button {
+    width: 100%;
+  }
+
+  .contact-actions {
     width: 100%;
   }
 

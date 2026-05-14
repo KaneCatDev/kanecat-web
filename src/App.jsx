@@ -4,6 +4,7 @@ import logoImage from "./assets/logo.png";
 
 const API_BASE_URL = "https://api.kanecat.dev";
 const CONTACT_EMAIL = "contact@kanecat.dev";
+const KOFI_URL = "https://ko-fi.com/kanecatdev";
 const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
     "Contacto desde kanecat.dev",
 )}&body=${encodeURIComponent("Hola KaneCatDev,\n\n")}`;
@@ -15,6 +16,7 @@ const translations = {
             news: "News",
             about: "About",
             contact: "Contact",
+            support: "Ko-fi",
         },
         hero: {
             eyebrow: "Android apps, games and AI tools",
@@ -79,6 +81,9 @@ const translations = {
             description:
                 "I am open to project ideas, collaborations and technical conversations around apps, tools and game-adjacent systems.",
             button: CONTACT_EMAIL,
+            supportText:
+                "If you enjoy my projects, you can also support future builds with a coffee.",
+            supportButton: "Support on Ko-fi",
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
@@ -92,6 +97,7 @@ const translations = {
             news: "Novedades",
             about: "Sobre mí",
             contact: "Contacto",
+            support: "Ko-fi",
         },
         hero: {
             eyebrow: "Apps Android, juegos y herramientas IA",
@@ -156,6 +162,9 @@ const translations = {
             description:
                 "Estoy abierto a ideas de proyectos, colaboraciones y conversaciones técnicas sobre apps, herramientas y sistemas alrededor de videojuegos.",
             button: CONTACT_EMAIL,
+            supportText:
+                "Si te gustan mis proyectos, también puedes apoyar futuras creaciones con un café.",
+            supportButton: "Apoyar en Ko-fi",
         },
         footer: {
             copyright: "© 2026 KaneCatDev",
@@ -372,6 +381,9 @@ function App() {
                         <a href="#news">{content.nav.news}</a>
                         <a href="#about">{content.nav.about}</a>
                         <a href="#contact">{content.nav.contact}</a>
+                        <a href={KOFI_URL} target="_blank" rel="noreferrer">
+                            {content.nav.support}
+                        </a>
                     </nav>
 
                     <button
@@ -677,15 +689,26 @@ function App() {
                     <p className="eyebrow">{content.contact.eyebrow}</p>
                     <h2>{content.contact.title}</h2>
                     <p>{content.contact.description}</p>
+                    <p className="support-copy">{content.contact.supportText}</p>
                 </div>
 
-                <a
-                    className="button primary-button"
-                    href={CONTACT_MAILTO}
-                    aria-label={`Enviar correo a ${CONTACT_EMAIL}`}
-                >
-                    {content.contact.button}
-                </a>
+                <div className="contact-actions">
+                    <a
+                        className="button primary-button"
+                        href={CONTACT_MAILTO}
+                        aria-label={`Enviar correo a ${CONTACT_EMAIL}`}
+                    >
+                        {content.contact.button}
+                    </a>
+                    <a
+                        className="button kofi-button"
+                        href={KOFI_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        {content.contact.supportButton}
+                    </a>
+                </div>
             </section>
 
             <footer className="footer">
