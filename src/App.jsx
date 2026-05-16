@@ -846,6 +846,8 @@ function HomePage() {
                             const projectImage = isVisibleUrl(project.image_url)
                                 ? project.image_url.trim()
                                 : "";
+                            const projectSummary = project.summary || "";
+                            const projectDescription = project.description || project.summary || "";
 
                             return (
                                 <article className="project-card" key={project.slug || project.id}>
@@ -876,7 +878,9 @@ function HomePage() {
                                         </div>
 
                                         <h3>{project.title}</h3>
-                                        <p>{project.description || project.summary}</p>
+                                        {projectSummary && (
+                                            <p className="project-summary">{projectSummary}</p>
+                                        )}
 
                                         <div className="card-actions">
                                             <details className="project-info">
@@ -885,7 +889,7 @@ function HomePage() {
                                                 </summary>
                                                 <div className="project-info-panel">
                                                     <span>{getStatusLabel(project.status)}</span>
-                                                    <p>{project.description || project.summary}</p>
+                                                    {projectDescription && <p>{projectDescription}</p>}
                                                 </div>
                                             </details>
                                             {isVisibleUrl(project.website_url) && (

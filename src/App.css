@@ -423,13 +423,14 @@ button {
 
 .project-grid {
   display: grid;
-  grid-template-columns: minmax(0, 390px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 420px));
+  align-items: start;
   justify-content: start;
-  gap: 20px;
+  gap: 22px;
 }
 
 .project-card {
-  min-height: 100%;
+  height: fit-content;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -542,7 +543,7 @@ button {
   line-height: 1.7;
 }
 
-.project-card p {
+.project-summary {
   margin: 14px 0 0;
 }
 
