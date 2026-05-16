@@ -1,0 +1,4 @@
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxx
+FROM_EMAIL=KaneCatDev <noreply@kanecat.dev>
+ADMIN_EMAIL=contact@kanecat.dev
+FRONTEND_URL=http://localhost:5173

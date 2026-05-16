@@ -3,6 +3,12 @@ import "./App.css";
 import logoImage from "./assets/logo.png";
 
 const API_BASE_URL = "https://api.kanecat.dev";
+const PUBLIC_ENDPOINTS = {
+    feed: "/feed",
+    news: "/news",
+    projects: "/projects",
+};
+const GAKEYRU_TEST_API_URL = "https://contact-api.kanecat.dev/api/gakeyru-test";
 const CONTACT_EMAIL = "contact@kanecat.dev";
 const KOFI_URL = "https://ko-fi.com/kanecatdev";
 const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -218,6 +224,53 @@ const getInitialLanguage = () => {
 
 const isVisibleUrl = (value) => typeof value === "string" && value.trim() !== "";
 
+const fetchPublicApi = async (path, signal) => {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        method: "GET",
+        signal,
+        headers: {
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`${path} request failed with ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.ok) {
+        throw new Error(`${path} response was not ok`);
+    }
+
+    return data;
+};
+
+const loadPublicContent = async (signal) => {
+    try {
+        const [projectsData, newsData] = await Promise.all([
+            fetchPublicApi(PUBLIC_ENDPOINTS.projects, signal),
+            fetchPublicApi(PUBLIC_ENDPOINTS.news, signal),
+        ]);
+
+        return {
+            projects: Array.isArray(projectsData.projects) ? projectsData.projects : [],
+            news: Array.isArray(newsData.news) ? newsData.news : [],
+        };
+    } catch (error) {
+        if (error.name === "AbortError") {
+            throw error;
+        }
+
+        const feedData = await fetchPublicApi(PUBLIC_ENDPOINTS.feed, signal);
+
+        return {
+            projects: Array.isArray(feedData.projects) ? feedData.projects : [],
+            news: Array.isArray(feedData.news) ? feedData.news : [],
+        };
+    }
+};
+
 const normalizeStatus = (status) => {
     if (!status) {
         return "unknown";
@@ -271,7 +324,306 @@ const getSortDate = (value) => {
     return date ? date.getTime() : 0;
 };
 
-function App() {
+function GakeyruTestPage() {
+    const [formValues, setFormValues] = useState({
+        contactEmail: "",
+        discord: "",
+        googlePlayEmail: "",
+        instagram: "",
+        name: "",
+        testerReason: "",
+        whatsapp: "",
+    });
+    const [optionalMethods, setOptionalMethods] = useState({
+        discord: false,
+        instagram: false,
+        whatsapp: false,
+    });
+    const [submissionError, setSubmissionError] = useState("");
+    const [submissionStatus, setSubmissionStatus] = useState("idle");
+
+    const updateField = (fieldName, value) => {
+        setFormValues((currentValues) => ({
+            ...currentValues,
+            [fieldName]: value,
+        }));
+    };
+
+    const toggleOptionalMethod = (method) => {
+        setOptionalMethods((currentMethods) => {
+            const nextValue = !currentMethods[method];
+
+            if (!nextValue) {
+                updateField(method, "");
+            }
+
+            return {
+                ...currentMethods,
+                [method]: nextValue,
+            };
+        });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setSubmissionError("");
+        setSubmissionStatus("submitting");
+
+        if (!window.fetch) {
+            setSubmissionStatus("error");
+            return;
+        }
+
+        if (window.fetch) {
+            try {
+                const response = await fetch(GAKEYRU_TEST_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        communicationEmail: formValues.contactEmail.trim(),
+                        googlePlayEmail: formValues.googlePlayEmail.trim(),
+                        name: formValues.name.trim(),
+                        reason: formValues.testerReason.trim(),
+                        instagram: optionalMethods.instagram,
+                        discord: optionalMethods.discord,
+                        whatsapp: optionalMethods.whatsapp,
+                        company: "",
+                    }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.error || "No se pudo enviar la petición.");
+                }
+
+                setSubmissionStatus("sent");
+            } catch (error) {
+                setSubmissionError(error.message);
+                setSubmissionStatus("error");
+            }
+
+            return;
+        }
+
+        setSubmissionStatus("error");
+    };
+
+    if (submissionStatus === "sent") {
+        return (
+            <main className="test-page">
+                <section className="test-form-shell test-thanks-shell" aria-labelledby="thanks-title">
+                    <div className="test-form-intro">
+                        <span className="brand-mark test-brand-mark">
+                            <img src={logoImage} alt="" aria-hidden="true" />
+                        </span>
+                        <p className="eyebrow">Petición enviada</p>
+                        <h1 id="thanks-title">Gracias por participar en la prueba</h1>
+                        <p>
+                            He recibido tu solicitud para Gakeyru Test. Si encaja con la prueba,
+                            te contactaré con los siguientes pasos.
+                        </p>
+                    </div>
+                </section>
+            </main>
+        );
+    }
+
+    return (
+        <main className="test-page">
+            <section className="test-form-shell" aria-labelledby="gakeyru-test-title">
+                <div className="test-form-intro">
+                    <span className="brand-mark test-brand-mark">
+                        <img src={logoImage} alt="" aria-hidden="true" />
+                    </span>
+                    <p className="eyebrow">Gakeyru Test</p>
+                    <h1 id="gakeyru-test-title">Solicitud para testers</h1>
+                    <p>
+                        Solicita acceso como tester de Gakeyru. El correo de Google Play se usa
+                        solo para añadirte a la prueba.
+                    </p>
+                    <p className="optional-contact-note">
+                        El correo de comunicación y el correo de Google Play son obligatorios.
+                        Instagram, Discord y WhatsApp son opcionales.
+                    </p>
+                    <div className="test-steps">
+                        <h2>Antes de apuntarte</h2>
+                        <ul>
+                            <li>Necesitas un móvil Android con Android 7.0 o superior.</li>
+                            <li>Debes tener acceso a Google Play Store.</li>
+                            <li>Usa una cuenta de Google/Gmail activa.</li>
+                            <li>
+                                Tendrás que pasarme el correo de Google que usas en Play Store
+                                para poder añadirte a la prueba cerrada.
+                            </li>
+                            <li>Cuando recibas el enlace de invitación, ábrelo con esa cuenta.</li>
+                            <li>Pulsa “Unirse a la prueba”.</li>
+                            <li>Instala Gakeyru desde Google Play.</li>
+                            <li>Mantente unido a la prueba durante 14 días seguidos.</li>
+                            <li>
+                                Si puedes, abre y usa la app durante esos días para que cuente como
+                                una prueba real.
+                            </li>
+                        </ul>
+                        <a
+                            className="test-policy-link"
+                            href="https://gakeyru.kanecat.dev/policies/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Ver políticas de Gakeyru
+                        </a>
+                    </div>
+                </div>
+
+                <form className="test-form" onSubmit={handleSubmit}>
+                    <label>
+                        <span>Nombre</span>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formValues.name}
+                            onChange={(event) => updateField("name", event.target.value)}
+                            placeholder="nombre para referirme a ti"
+                            autoComplete="name"
+                            required
+                        />
+                    </label>
+
+                    <label>
+                        <span>Correo o método de comunicación</span>
+                        <span className="contact-email-label">Correo de comunicación</span>
+                        <input
+                            type="email"
+                            name="contactEmail"
+                            value={formValues.contactEmail}
+                            onChange={(event) => updateField("contactEmail", event.target.value)}
+                            placeholder="correo donde puedo contactarte"
+                            autoComplete="email"
+                            required
+                        />
+                    </label>
+
+                    <fieldset className="optional-contact-group">
+                        <legend>Medios de comunicación opcionales</legend>
+                        <p>Marca solo los que quieras añadir además del correo.</p>
+
+                        <div className="optional-contact-options">
+                            {[
+                                ["instagram", "Instagram"],
+                                ["discord", "Discord"],
+                                ["whatsapp", "WhatsApp"],
+                            ].map(([method, label]) => (
+                                <label className="contact-option" key={method}>
+                                    <input
+                                        type="checkbox"
+                                        checked={optionalMethods[method]}
+                                        onChange={() => toggleOptionalMethod(method)}
+                                    />
+                                    <span>{label}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        {optionalMethods.instagram && (
+                            <label>
+                                <span>Usuario de Instagram</span>
+                                <input
+                                    type="text"
+                                    name="instagram"
+                                    value={formValues.instagram}
+                                    onChange={(event) =>
+                                        updateField("instagram", event.target.value)
+                                    }
+                                    placeholder="@usuario"
+                                    required
+                                />
+                            </label>
+                        )}
+
+                        {optionalMethods.discord && (
+                            <label>
+                                <span>Usuario de Discord</span>
+                                <input
+                                    type="text"
+                                    name="discord"
+                                    value={formValues.discord}
+                                    onChange={(event) => updateField("discord", event.target.value)}
+                                    placeholder="usuario o ID de Discord"
+                                    required
+                                />
+                            </label>
+                        )}
+
+                        {optionalMethods.whatsapp && (
+                            <label>
+                                <span>Número de WhatsApp</span>
+                                <input
+                                    type="tel"
+                                    name="whatsapp"
+                                    value={formValues.whatsapp}
+                                    onChange={(event) =>
+                                        updateField("whatsapp", event.target.value)
+                                    }
+                                    placeholder="+34 600 000 000"
+                                    autoComplete="tel"
+                                    required
+                                />
+                            </label>
+                        )}
+                    </fieldset>
+
+                    <label>
+                        <span>Correo de Google Play</span>
+                        <input
+                            type="email"
+                            name="googlePlayEmail"
+                            value={formValues.googlePlayEmail}
+                            onChange={(event) =>
+                                updateField("googlePlayEmail", event.target.value)
+                            }
+                            placeholder="cuenta usada en Google Play"
+                            autoComplete="email"
+                            required
+                        />
+                    </label>
+
+                    <label>
+                        <span>Por qué quieres ser tester</span>
+                        <textarea
+                            name="testerReason"
+                            value={formValues.testerReason}
+                            onChange={(event) => updateField("testerReason", event.target.value)}
+                            placeholder="Cuéntame brevemente por qué te interesa probar Gakeyru."
+                            rows="6"
+                            required
+                        />
+                    </label>
+
+                    <button
+                        className="button primary-button test-submit-button"
+                        type="submit"
+                        disabled={submissionStatus === "submitting"}
+                    >
+                        {submissionStatus === "submitting" ? "Enviando..." : "Enviar petición"}
+                    </button>
+
+                    {submissionStatus === "error" && (
+                        <p className="test-submit-note test-submit-error">
+                            {submissionError
+                                ? `No se pudo enviar: ${submissionError}`
+                                : "No se pudo enviar ahora mismo. Inténtalo de nuevo en unos minutos."}
+                        </p>
+                    )}
+                </form>
+            </section>
+        </main>
+    );
+}
+
+function HomePage() {
     const [language, setLanguage] = useState(getInitialLanguage);
     const [feed, setFeed] = useState({
         projects: [],
@@ -325,27 +677,7 @@ function App() {
             setFeedStatus("loading");
 
             try {
-                const response = await fetch(`${API_BASE_URL}/feed`, {
-                    signal: abortController.signal,
-                    headers: {
-                        Accept: "application/json",
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Feed request failed with ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (!data.ok) {
-                    throw new Error("Feed response was not ok");
-                }
-
-                setFeed({
-                    projects: Array.isArray(data.projects) ? data.projects : [],
-                    news: Array.isArray(data.news) ? data.news : [],
-                });
+                setFeed(await loadPublicContent(abortController.signal));
                 setFeedStatus("ready");
             } catch (error) {
                 if (error.name !== "AbortError") {
@@ -717,6 +1049,14 @@ function App() {
             </footer>
         </main>
     );
+}
+
+function App() {
+    if (window.location.pathname === "/gakeyru-test") {
+        return <GakeyruTestPage />;
+    }
+
+    return <HomePage />;
 }
 
 export default App;
