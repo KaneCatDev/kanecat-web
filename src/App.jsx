@@ -387,8 +387,15 @@ function GakeyruTestPage() {
                         name: formValues.name.trim(),
                         reason: formValues.testerReason.trim(),
                         instagram: optionalMethods.instagram,
+                        instagramUser: optionalMethods.instagram
+                            ? formValues.instagram.trim()
+                            : "",
                         discord: optionalMethods.discord,
+                        discordUser: optionalMethods.discord ? formValues.discord.trim() : "",
                         whatsapp: optionalMethods.whatsapp,
+                        whatsappNumber: optionalMethods.whatsapp
+                            ? formValues.whatsapp.trim()
+                            : "",
                         company: "",
                     }),
                 });
