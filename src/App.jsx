@@ -2,13 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import logoImage from "./assets/logo.png";
 
-const API_BASE_URL = "https://api.kanecat.dev";
+const DEFAULT_PUBLIC_API_BASE_URL = "https://api.kanecat.dev";
+const API_BASE_URL = (
+    import.meta.env.VITE_PUBLIC_API_BASE_URL || DEFAULT_PUBLIC_API_BASE_URL
+).replace(/\/+$/, "");
 const PUBLIC_ENDPOINTS = {
     feed: "/feed",
     news: "/news",
     projects: "/projects",
 };
-const GAKEYRU_TEST_API_URL = "https://contact-api.kanecat.dev/api/gakeyru-test";
+const GAKEYRU_TEST_API_URL =
+    import.meta.env.VITE_GAKEYRU_TEST_API_URL ||
+    import.meta.env.VITE_CONTACT_ENDPOINT ||
+    "https://contact-api.kanecat.dev/api/gakeyru-test";
 const CONTACT_EMAIL = "contact@kanecat.dev";
 const KOFI_URL = "https://ko-fi.com/kanecatdev";
 const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -50,6 +56,7 @@ const translations = {
             infoButton: "Information",
             websiteButton: "Website",
             repoButton: "Repository",
+            untitled: "Untitled project",
         },
         newsSection: {
             eyebrow: "Updates",
@@ -58,6 +65,11 @@ const translations = {
             loading: "Loading news...",
             error: "The public news feed could not be loaded right now.",
             linkButton: "Read more",
+            untitled: "Untitled update",
+        },
+        a11y: {
+            navigation: "Main navigation",
+            switchLanguage: "Cambiar idioma a español",
         },
         statusLabels: {
             active: "Active",
@@ -131,6 +143,7 @@ const translations = {
             infoButton: "Información",
             websiteButton: "Web",
             repoButton: "Repositorio",
+            untitled: "Proyecto sin título",
         },
         newsSection: {
             eyebrow: "Actualizaciones",
@@ -139,6 +152,11 @@ const translations = {
             loading: "Cargando novedades...",
             error: "Ahora mismo no se pudo cargar el feed público de novedades.",
             linkButton: "Leer más",
+            untitled: "Novedad sin título",
+        },
+        a11y: {
+            navigation: "Navegación principal",
+            switchLanguage: "Switch language to English",
         },
         statusLabels: {
             active: "Activo",
@@ -222,7 +240,40 @@ const getInitialLanguage = () => {
     return navigator.language?.toLowerCase().startsWith("es") ? "es" : "en";
 };
 
-const isVisibleUrl = (value) => typeof value === "string" && value.trim() !== "";
+const getSafeWebUrl = (value) => {
+    if (typeof value !== "string" || value.trim() === "") {
+        return "";
+    }
+
+    try {
+        const url = new URL(value.trim(), "https://kanecat.dev");
+
+        return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    } catch {
+        return "";
+    }
+};
+
+const getDisplayText = (...values) => {
+    const value = values.find((item) => typeof item === "string" && item.trim() !== "");
+
+    return value ? value.trim().replace(/\s+/g, " ") : "";
+};
+
+const truncateText = (value, maxLength = 190) => {
+    const text = getDisplayText(value);
+
+    if (text.length <= maxLength) {
+        return text;
+    }
+
+    return `${text.slice(0, maxLength).trimEnd()}...`;
+};
+
+const getPublicContentFromResponse = (data = {}) => ({
+    projects: Array.isArray(data?.projects) ? data.projects : [],
+    news: Array.isArray(data?.news) ? data.news : [],
+});
 
 const fetchPublicApi = async (path, signal) => {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -239,7 +290,7 @@ const fetchPublicApi = async (path, signal) => {
 
     const data = await response.json();
 
-    if (!data.ok) {
+    if (!data || data.ok === false) {
         throw new Error(`${path} response was not ok`);
     }
 
@@ -247,28 +298,55 @@ const fetchPublicApi = async (path, signal) => {
 };
 
 const loadPublicContent = async (signal) => {
-    try {
-        const [projectsData, newsData] = await Promise.all([
-            fetchPublicApi(PUBLIC_ENDPOINTS.projects, signal),
-            fetchPublicApi(PUBLIC_ENDPOINTS.news, signal),
-        ]);
+    const [projectsResult, newsResult] = await Promise.allSettled([
+        fetchPublicApi(PUBLIC_ENDPOINTS.projects, signal),
+        fetchPublicApi(PUBLIC_ENDPOINTS.news, signal),
+    ]);
 
-        return {
-            projects: Array.isArray(projectsData.projects) ? projectsData.projects : [],
-            news: Array.isArray(newsData.news) ? newsData.news : [],
-        };
-    } catch (error) {
-        if (error.name === "AbortError") {
-            throw error;
-        }
+    const abortResult = [projectsResult, newsResult].find(
+        (result) => result.status === "rejected" && result.reason?.name === "AbortError",
+    );
 
-        const feedData = await fetchPublicApi(PUBLIC_ENDPOINTS.feed, signal);
-
-        return {
-            projects: Array.isArray(feedData.projects) ? feedData.projects : [],
-            news: Array.isArray(feedData.news) ? feedData.news : [],
-        };
+    if (abortResult) {
+        throw abortResult.reason;
     }
+
+    let projects =
+        projectsResult.status === "fulfilled"
+            ? getPublicContentFromResponse(projectsResult.value).projects
+            : [];
+    let news =
+        newsResult.status === "fulfilled"
+            ? getPublicContentFromResponse(newsResult.value).news
+            : [];
+    const needsFeedFallback =
+        projectsResult.status === "rejected" ||
+        newsResult.status === "rejected" ||
+        (!projects.length && !news.length);
+
+    if (needsFeedFallback) {
+        try {
+            const feedData = await fetchPublicApi(PUBLIC_ENDPOINTS.feed, signal);
+            const feedContent = getPublicContentFromResponse(feedData);
+
+            if (!projects.length) {
+                projects = feedContent.projects;
+            }
+
+            if (!news.length) {
+                news = feedContent.news;
+            }
+        } catch (error) {
+            const hasSuccessfulEndpoint =
+                projectsResult.status === "fulfilled" || newsResult.status === "fulfilled";
+
+            if (!hasSuccessfulEndpoint) {
+                throw error;
+            }
+        }
+    }
+
+    return { projects, news };
 };
 
 const normalizeStatus = (status) => {
@@ -295,13 +373,27 @@ const getDateParts = (value) => {
     }
 
     const datePart = String(value).slice(0, 10);
-    const [year, month, day] = datePart.split("-").map(Number);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
 
-    if (!year || !month || !day) {
+    if (!match) {
         return null;
     }
 
-    return new Date(year, month - 1, day);
+    const [, yearValue, monthValue, dayValue] = match;
+    const year = Number(yearValue);
+    const month = Number(monthValue);
+    const day = Number(dayValue);
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
 };
 
 const formatDate = (value, language) => {
@@ -324,6 +416,24 @@ const getSortDate = (value) => {
     return date ? date.getTime() : 0;
 };
 
+function RemoteImage({ alt = "", className, fallback, src }) {
+    const [hasError, setHasError] = useState(false);
+
+    if (!src || hasError) {
+        return fallback;
+    }
+
+    return (
+        <img
+            className={className}
+            src={src}
+            alt={alt}
+            loading="lazy"
+            onError={() => setHasError(true)}
+        />
+    );
+}
+
 function GakeyruTestPage() {
     const [formValues, setFormValues] = useState({
         contactEmail: "",
@@ -341,6 +451,11 @@ function GakeyruTestPage() {
     });
     const [submissionError, setSubmissionError] = useState("");
     const [submissionStatus, setSubmissionStatus] = useState("idle");
+
+    useEffect(() => {
+        document.documentElement.lang = "es";
+        document.title = "Gakeyru Test | KaneCatDev";
+    }, []);
 
     const updateField = (fieldName, value) => {
         setFormValues((currentValues) => ({
@@ -369,53 +484,44 @@ function GakeyruTestPage() {
         setSubmissionError("");
         setSubmissionStatus("submitting");
 
-        if (!window.fetch) {
+        if (typeof window.fetch !== "function") {
+            setSubmissionError("Tu navegador no permite enviar la solicitud.");
             setSubmissionStatus("error");
             return;
         }
 
-        if (window.fetch) {
-            try {
-                const response = await fetch(GAKEYRU_TEST_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        communicationEmail: formValues.contactEmail.trim(),
-                        googlePlayEmail: formValues.googlePlayEmail.trim(),
-                        name: formValues.name.trim(),
-                        reason: formValues.testerReason.trim(),
-                        instagram: optionalMethods.instagram,
-                        instagramUser: optionalMethods.instagram
-                            ? formValues.instagram.trim()
-                            : "",
-                        discord: optionalMethods.discord,
-                        discordUser: optionalMethods.discord ? formValues.discord.trim() : "",
-                        whatsapp: optionalMethods.whatsapp,
-                        whatsappNumber: optionalMethods.whatsapp
-                            ? formValues.whatsapp.trim()
-                            : "",
-                        company: "",
-                    }),
-                });
+        try {
+            const response = await fetch(GAKEYRU_TEST_API_URL, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    communicationEmail: formValues.contactEmail.trim(),
+                    googlePlayEmail: formValues.googlePlayEmail.trim(),
+                    name: formValues.name.trim(),
+                    reason: formValues.testerReason.trim(),
+                    instagram: optionalMethods.instagram,
+                    instagramUser: optionalMethods.instagram ? formValues.instagram.trim() : "",
+                    discord: optionalMethods.discord,
+                    discordUser: optionalMethods.discord ? formValues.discord.trim() : "",
+                    whatsapp: optionalMethods.whatsapp,
+                    whatsappNumber: optionalMethods.whatsapp ? formValues.whatsapp.trim() : "",
+                    company: "",
+                }),
+            });
+            const data = await response.json().catch(() => ({}));
 
-                const data = await response.json().catch(() => ({}));
-
-                if (!response.ok || !data.ok) {
-                    throw new Error(data.error || "No se pudo enviar la petición.");
-                }
-
-                setSubmissionStatus("sent");
-            } catch (error) {
-                setSubmissionError(error.message);
-                setSubmissionStatus("error");
+            if (!response.ok || data.ok === false) {
+                throw new Error(data.error || "No se pudo enviar la petición.");
             }
 
-            return;
+            setSubmissionStatus("sent");
+        } catch (error) {
+            setSubmissionError(error.message || "No se pudo enviar la petición.");
+            setSubmissionStatus("error");
         }
-
-        setSubmissionStatus("error");
     };
 
     if (submissionStatus === "sent") {
@@ -669,12 +775,17 @@ function HomePage() {
     const getStatusLabel = (status) => {
         const normalizedStatus = normalizeStatus(status);
 
-        return content.statusLabels[normalizedStatus] || humanizeStatus(status);
+        return (
+            content.statusLabels[normalizedStatus] ||
+            humanizeStatus(status) ||
+            content.statusLabels.unknown
+        );
     };
 
     useEffect(() => {
         localStorage.setItem("portfolio-language", language);
         document.documentElement.lang = language;
+        document.title = "KaneCatDev | Portfolio";
     }, [language]);
 
     useEffect(() => {
@@ -715,7 +826,7 @@ function HomePage() {
                 </a>
 
                 <div className="nav-actions">
-                    <nav className="nav-links" aria-label="Main navigation">
+                    <nav className="nav-links" aria-label={content.a11y.navigation}>
                         <a href="#projects">{content.nav.projects}</a>
                         <a href="#news">{content.nav.news}</a>
                         <a href="#about">{content.nav.about}</a>
@@ -729,11 +840,15 @@ function HomePage() {
                         className="language-toggle"
                         type="button"
                         onClick={toggleLanguage}
-                        aria-label="Change language"
+                        aria-label={content.a11y.switchLanguage}
                     >
-                        <span className={language === "en" ? "active-language" : ""}>EN</span>
+                        <span lang="en" className={language === "en" ? "active-language" : ""}>
+                            EN
+                        </span>
                         <span aria-hidden="true">/</span>
-                        <span className={language === "es" ? "active-language" : ""}>ES</span>
+                        <span lang="es" className={language === "es" ? "active-language" : ""}>
+                            ES
+                        </span>
                     </button>
                 </div>
             </header>
@@ -767,7 +882,7 @@ function HomePage() {
                     <p>{content.profile.subtitle}</p>
 
                     <div className="status-box">
-                        <span className="status-dot"></span>
+                        <span className="status-dot" aria-hidden="true"></span>
                         <span>{content.profile.status}</span>
                     </div>
 
@@ -795,17 +910,20 @@ function HomePage() {
                                         newsItem.published_at || newsItem.created_at,
                                         language,
                                     );
-                                    const hasNewsLink = isVisibleUrl(newsItem.link_url);
+                                    const newsLink = getSafeWebUrl(newsItem.link_url);
+                                    const newsTitle =
+                                        getDisplayText(newsItem.title) ||
+                                        content.newsSection.untitled;
 
                                     return (
                                         <a
                                             className="profile-news-link"
-                                            href={hasNewsLink ? newsItem.link_url.trim() : "#news"}
-                                            target={hasNewsLink ? "_blank" : undefined}
-                                            rel={hasNewsLink ? "noreferrer" : undefined}
-                                            key={newsItem.slug || newsItem.id}
+                                            href={newsLink || "#news"}
+                                            target={newsLink ? "_blank" : undefined}
+                                            rel={newsLink ? "noreferrer" : undefined}
+                                            key={newsItem.slug || newsItem.id || newsTitle}
                                         >
-                                            <span>{newsItem.title}</span>
+                                            <span>{newsTitle}</span>
                                             {newsDate && <time>{newsDate}</time>}
                                         </a>
                                     );
@@ -848,24 +966,40 @@ function HomePage() {
 
                 {!isLoading && !hasError && sortedProjects.length > 0 && (
                     <div className="project-grid">
-                        {sortedProjects.map((project) => {
+                        {sortedProjects.map((project, projectIndex) => {
                             const status = normalizeStatus(project.status);
-                            const projectImage = isVisibleUrl(project.image_url)
-                                ? project.image_url.trim()
-                                : "";
-                            const projectSummary = project.summary || "";
-                            const projectDescription = project.description || project.summary || "";
+                            const projectImage = getSafeWebUrl(project.image_url);
+                            const websiteUrl = getSafeWebUrl(project.website_url);
+                            const repositoryUrl = getSafeWebUrl(project.repo_url);
+                            const projectTitle =
+                                getDisplayText(project.title) ||
+                                content.projectsSection.untitled;
+                            const projectSummary = truncateText(
+                                getDisplayText(project.summary, project.description),
+                                150,
+                            );
+                            const projectDescription = getDisplayText(
+                                project.description,
+                                project.summary,
+                            );
 
                             return (
-                                <article className="project-card" key={project.slug || project.id}>
-                                    {projectImage && (
-                                        <img
+                                <article
+                                    className="project-card"
+                                    key={project.slug || project.id || `${projectTitle}-${projectIndex}`}
+                                >
+                                    <div className="project-media">
+                                        <RemoteImage
                                             className="project-image"
                                             src={projectImage}
                                             alt=""
-                                            loading="lazy"
+                                            fallback={
+                                                <div className="project-image-placeholder">
+                                                <span>{projectTitle.charAt(0)}</span>
+                                                </div>
+                                            }
                                         />
-                                    )}
+                                    </div>
 
                                     <div className="project-card-body">
                                         <div className="project-card-header">
@@ -884,7 +1018,7 @@ function HomePage() {
                                             </span>
                                         </div>
 
-                                        <h3>{project.title}</h3>
+                                        <h3>{projectTitle}</h3>
                                         {projectSummary && (
                                             <p className="project-summary">{projectSummary}</p>
                                         )}
@@ -899,20 +1033,20 @@ function HomePage() {
                                                     {projectDescription && <p>{projectDescription}</p>}
                                                 </div>
                                             </details>
-                                            {isVisibleUrl(project.website_url) && (
+                                            {websiteUrl && (
                                                 <a
                                                     className="project-action"
-                                                    href={project.website_url.trim()}
+                                                    href={websiteUrl}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                 >
                                                     {content.projectsSection.websiteButton}
                                                 </a>
                                             )}
-                                            {isVisibleUrl(project.repo_url) && (
+                                            {repositoryUrl && (
                                                 <a
                                                     className="project-action"
-                                                    href={project.repo_url.trim()}
+                                                    href={repositoryUrl}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                 >
@@ -954,25 +1088,35 @@ function HomePage() {
 
                 {!isLoading && !hasError && sortedNews.length > 0 && (
                     <div className="news-list">
-                        {sortedNews.map((newsItem) => {
+                        {sortedNews.map((newsItem, newsIndex) => {
                             const newsDate = formatDate(
                                 newsItem.published_at || newsItem.created_at,
                                 language,
                             );
-                            const newsImage = isVisibleUrl(newsItem.image_url)
-                                ? newsItem.image_url.trim()
-                                : "";
+                            const newsImage = getSafeWebUrl(newsItem.image_url);
+                            const newsLink = getSafeWebUrl(newsItem.link_url);
+                            const newsTitle =
+                                getDisplayText(newsItem.title) || content.newsSection.untitled;
+                            const newsSummary = truncateText(
+                                getDisplayText(newsItem.summary, newsItem.content),
+                                220,
+                            );
 
                             return (
-                                <article className="news-item" key={newsItem.slug || newsItem.id}>
-                                    {newsImage && (
-                                        <img
-                                            className="news-image"
-                                            src={newsImage}
-                                            alt=""
-                                            loading="lazy"
-                                        />
-                                    )}
+                                <article
+                                    className="news-item"
+                                    key={newsItem.slug || newsItem.id || `${newsTitle}-${newsIndex}`}
+                                >
+                                    <RemoteImage
+                                        className="news-image"
+                                        src={newsImage}
+                                        alt=""
+                                        fallback={
+                                            <div className="news-date-card" aria-hidden="true">
+                                                <span>{newsDate || content.newsSection.eyebrow}</span>
+                                            </div>
+                                        }
+                                    />
 
                                     <div className="news-content">
                                         <div className="news-meta">
@@ -980,13 +1124,13 @@ function HomePage() {
                                             {newsDate && <time>{newsDate}</time>}
                                         </div>
 
-                                        <h3>{newsItem.title}</h3>
-                                        <p>{newsItem.summary || newsItem.content}</p>
+                                        <h3>{newsTitle}</h3>
+                                        {newsSummary && <p>{newsSummary}</p>}
 
-                                        {isVisibleUrl(newsItem.link_url) && (
+                                        {newsLink && (
                                             <a
                                                 className="text-link"
-                                                href={newsItem.link_url.trim()}
+                                                href={newsLink}
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
@@ -1063,7 +1207,7 @@ function HomePage() {
 }
 
 function App() {
-    if (window.location.pathname === "/gakeyru-test") {
+    if (window.location.pathname.replace(/\/+$/, "") === "/gakeyru-test") {
         return <GakeyruTestPage />;
     }
 

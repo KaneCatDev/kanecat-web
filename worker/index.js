@@ -30,8 +30,9 @@ const getCorsHeaders = (request, env) => {
     return {
         "Access-Control-Allow-Origin": allowOrigin,
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Accept, Content-Type",
         "Content-Type": "application/json",
+        Vary: "Origin",
     };
 };
 
@@ -73,6 +74,57 @@ const validateContactForm = ({ name, email, message }) => {
     return null;
 };
 
+const validateGakeyruTestForm = ({
+    communicationEmail,
+    discord,
+    discordUser,
+    googlePlayEmail,
+    instagram,
+    instagramUser,
+    name,
+    reason,
+    whatsapp,
+    whatsappNumber,
+}) => {
+    if (!name || name.length < 2) {
+        return "El nombre es obligatorio.";
+    }
+
+    if (name.length > 80) {
+        return "El nombre es demasiado largo.";
+    }
+
+    if (!communicationEmail || !isValidEmail(communicationEmail)) {
+        return "El correo de comunicación no es válido.";
+    }
+
+    if (!googlePlayEmail || !isValidEmail(googlePlayEmail)) {
+        return "El correo de Google Play no es válido.";
+    }
+
+    if (!reason || reason.length < 10) {
+        return "Cuéntame un poco más sobre por qué quieres ser tester.";
+    }
+
+    if (reason.length > 3000) {
+        return "El motivo es demasiado largo.";
+    }
+
+    if (instagram && !instagramUser) {
+        return "Falta el usuario de Instagram.";
+    }
+
+    if (discord && !discordUser) {
+        return "Falta el usuario de Discord.";
+    }
+
+    if (whatsapp && !whatsappNumber) {
+        return "Falta el número de WhatsApp.";
+    }
+
+    return null;
+};
+
 const sendResendEmail = async (env, payload) => {
     const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -92,6 +144,88 @@ const sendResendEmail = async (env, payload) => {
     return data;
 };
 
+const handleGakeyruTestSubmission = async (body, env, corsHeaders) => {
+    const name = sanitizeText(body.name || "");
+    const communicationEmail = sanitizeText(body.communicationEmail || "");
+    const googlePlayEmail = sanitizeText(body.googlePlayEmail || "");
+    const reason = sanitizeText(body.reason || "");
+    const instagram = body.instagram === true;
+    const instagramUser = sanitizeText(body.instagramUser || "");
+    const discord = body.discord === true;
+    const discordUser = sanitizeText(body.discordUser || "");
+    const whatsapp = body.whatsapp === true;
+    const whatsappNumber = sanitizeText(body.whatsappNumber || "");
+    const honeypot = sanitizeText(body.company || "");
+
+    if (honeypot.length > 0) {
+        return jsonResponse(
+            { ok: true, message: "Solicitud recibida correctamente." },
+            200,
+            corsHeaders,
+        );
+    }
+
+    const validationError = validateGakeyruTestForm({
+        communicationEmail,
+        discord,
+        discordUser,
+        googlePlayEmail,
+        instagram,
+        instagramUser,
+        name,
+        reason,
+        whatsapp,
+        whatsappNumber,
+    });
+
+    if (validationError) {
+        return jsonResponse({ ok: false, error: validationError }, 400, corsHeaders);
+    }
+
+    checkRequiredEnv(env);
+
+    const contactRows = [
+        instagram && instagramUser
+            ? `<p><strong>Instagram:</strong> ${escapeHtml(instagramUser)}</p>`
+            : "",
+        discord && discordUser
+            ? `<p><strong>Discord:</strong> ${escapeHtml(discordUser)}</p>`
+            : "",
+        whatsapp && whatsappNumber
+            ? `<p><strong>WhatsApp:</strong> ${escapeHtml(whatsappNumber)}</p>`
+            : "",
+    ].join("");
+
+    await sendResendEmail(env, {
+        from: env.FROM_EMAIL,
+        to: env.ADMIN_EMAIL,
+        reply_to: communicationEmail,
+        subject: CONTACT_SUBJECT,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>${CONTACT_SUBJECT}</h2>
+            <p><strong>Nombre:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Correo de comunicación:</strong> ${escapeHtml(communicationEmail)}</p>
+            <p><strong>Correo de Google Play:</strong> ${escapeHtml(googlePlayEmail)}</p>
+            ${contactRows}
+            <hr>
+            <p><strong>Motivo:</strong></p>
+            <p>${escapeHtml(reason).replace(/\n/g, "<br>")}</p>
+            <hr>
+            <p style="color: #666; font-size: 13px;">
+              Solicitud enviada desde el formulario de testers de Gakeyru.
+            </p>
+          </div>
+        `,
+    });
+
+    return jsonResponse(
+        { ok: true, message: "Solicitud enviada correctamente." },
+        200,
+        corsHeaders,
+    );
+};
+
 const handleContactRequest = async (request, env) => {
     const corsHeaders = getCorsHeaders(request, env);
 
@@ -105,8 +239,6 @@ const handleContactRequest = async (request, env) => {
     if (request.method !== "POST") {
         return jsonResponse({ ok: false, error: "Method not allowed" }, 405, corsHeaders);
     }
-
-    checkRequiredEnv(env);
 
     let body;
 
@@ -125,6 +257,10 @@ const handleContactRequest = async (request, env) => {
     const message = sanitizeText(body.message || "");
     const honeypot = sanitizeText(body.company || "");
 
+    if ("communicationEmail" in body || "googlePlayEmail" in body || "reason" in body) {
+        return handleGakeyruTestSubmission(body, env, corsHeaders);
+    }
+
     if (honeypot.length > 0) {
         return jsonResponse(
             { ok: true, message: "Mensaje recibido correctamente." },
@@ -138,6 +274,8 @@ const handleContactRequest = async (request, env) => {
     if (validationError) {
         return jsonResponse({ ok: false, error: validationError }, 400, corsHeaders);
     }
+
+    checkRequiredEnv(env);
 
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);
@@ -175,7 +313,7 @@ export default {
     async fetch(request, env) {
         const url = new URL(request.url);
 
-        if (url.pathname === "/contact") {
+        if (url.pathname === "/contact" || url.pathname === "/api/gakeyru-test") {
             try {
                 return await handleContactRequest(request, env);
             } catch (error) {

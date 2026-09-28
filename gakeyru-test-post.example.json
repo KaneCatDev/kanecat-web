@@ -1,0 +1,13 @@
+{
+  "communicationEmail": "tester@example.com",
+  "googlePlayEmail": "tester.play@gmail.com",
+  "name": "Alex Tester",
+  "reason": "Quiero probar Gakeyru en mi movil Android y ayudar reportando errores durante la prueba cerrada.",
+  "instagram": true,
+  "instagramUser": "@alex_tester",
+  "discord": false,
+  "discordUser": "",
+  "whatsapp": true,
+  "whatsappNumber": "+34 600 000 000",
+  "company": ""
+}
