@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import logoImage from "./assets/logo.png";
+import ProjectPage from "./ProjectPage.jsx";
+import SpaLink from "./SpaLink.jsx";
 
 const DEFAULT_PUBLIC_API_BASE_URL = "https://api.kanecat.dev";
 const API_BASE_URL = (
@@ -54,6 +56,7 @@ const translations = {
             featured: "Featured",
             standard: "Project",
             infoButton: "Information",
+            viewButton: "View project",
             websiteButton: "Website",
             repoButton: "Repository",
             untitled: "Untitled project",
@@ -141,6 +144,7 @@ const translations = {
             featured: "Destacado",
             standard: "Proyecto",
             infoButton: "Información",
+            viewButton: "Ver proyecto",
             websiteButton: "Web",
             repoButton: "Repositorio",
             untitled: "Proyecto sin título",
@@ -1024,6 +1028,14 @@ function HomePage() {
                                         )}
 
                                         <div className="card-actions">
+                                            {project.slug && (
+                                                <SpaLink
+                                                    className="project-action project-detail-action"
+                                                    href={`/projects/${encodeURIComponent(project.slug)}`}
+                                                >
+                                                    {content.projectsSection.viewButton}
+                                                </SpaLink>
+                                            )}
                                             <details className="project-info">
                                                 <summary className="project-action info-action">
                                                     {content.projectsSection.infoButton}
@@ -1207,8 +1219,55 @@ function HomePage() {
 }
 
 function App() {
-    if (window.location.pathname.replace(/\/+$/, "") === "/gakeyru-test") {
+    const [locationKey, setLocationKey] = useState(
+        () => `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    );
+    const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+
+    useEffect(() => {
+        const handleLocationChange = () => {
+            setLocationKey(
+                `${window.location.pathname}${window.location.search}${window.location.hash}`,
+            );
+        };
+
+        window.addEventListener("popstate", handleLocationChange);
+        return () => window.removeEventListener("popstate", handleLocationChange);
+    }, []);
+
+    useEffect(() => {
+        if (pathname.startsWith("/projects/")) {
+            window.scrollTo({ top: 0 });
+            return undefined;
+        }
+
+        if (window.location.hash) {
+            const animationFrame = window.requestAnimationFrame(() => {
+                document.querySelector(window.location.hash)?.scrollIntoView();
+            });
+
+            return () => window.cancelAnimationFrame(animationFrame);
+        }
+
+        return undefined;
+    }, [locationKey, pathname]);
+
+    if (pathname === "/gakeyru-test") {
         return <GakeyruTestPage />;
+    }
+
+    const projectMatch = /^\/projects\/([^/]+)$/.exec(pathname);
+
+    if (projectMatch) {
+        let projectSlug = projectMatch[1];
+
+        try {
+            projectSlug = decodeURIComponent(projectSlug);
+        } catch {
+            // Keep the raw segment so the API can return the appropriate not-found state.
+        }
+
+        return <ProjectPage apiBaseUrl={API_BASE_URL} slug={projectSlug} />;
     }
 
     return <HomePage />;
