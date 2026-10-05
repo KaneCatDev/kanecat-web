@@ -3,6 +3,7 @@ import "./App.css";
 import logoImage from "./assets/logo.png";
 import ProjectPage from "./ProjectPage.jsx";
 import SpaLink from "./SpaLink.jsx";
+import ContactSection from "./ContactSection.jsx";
 
 const DEFAULT_PUBLIC_API_BASE_URL = "https://api.kanecat.dev";
 const API_BASE_URL = (
@@ -17,11 +18,7 @@ const GAKEYRU_TEST_API_URL =
     import.meta.env.VITE_GAKEYRU_TEST_API_URL ||
     import.meta.env.VITE_CONTACT_ENDPOINT ||
     "https://contact-api.kanecat.dev/api/gakeyru-test";
-const CONTACT_EMAIL = "contact@kanecat.dev";
 const KOFI_URL = "https://ko-fi.com/kanecatdev";
-const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-    "Contacto desde kanecat.dev",
-)}&body=${encodeURIComponent("Hola KaneCatDev,\n\n")}`;
 
 const translations = {
     en: {
@@ -98,10 +95,17 @@ const translations = {
         },
         contact: {
             eyebrow: "Contact",
-            title: "Want to build something?",
+            title: "Let's get in touch",
             description:
                 "I am open to project ideas, collaborations and technical conversations around apps, tools and game-adjacent systems.",
-            button: CONTACT_EMAIL,
+            emailSubject: "Contact from kanecat.dev",
+            methods: {
+                email: { label: "Email", description: "Project ideas, collaborations or a hello." },
+                github: { label: "GitHub", description: "Explore my code and repositories." },
+                linkedin: { label: "LinkedIn", description: "Connect with me professionally." },
+                discord: { label: "Discord", description: "Let's chat about projects and ideas." },
+                phone: { label: "Phone", description: "Call me directly." },
+            },
             supportText:
                 "If you enjoy my projects, you can also support future builds with a coffee.",
             supportButton: "Support on Ko-fi",
@@ -186,10 +190,17 @@ const translations = {
         },
         contact: {
             eyebrow: "Contacto",
-            title: "¿Montamos algo?",
+            title: "Hablemos",
             description:
                 "Estoy abierto a ideas de proyectos, colaboraciones y conversaciones técnicas sobre apps, herramientas y sistemas alrededor de videojuegos.",
-            button: CONTACT_EMAIL,
+            emailSubject: "Contacto desde kanecat.dev",
+            methods: {
+                email: { label: "Correo", description: "Ideas, colaboraciones o simplemente un saludo." },
+                github: { label: "GitHub", description: "Explora mi código y mis repositorios." },
+                linkedin: { label: "LinkedIn", description: "Conecta conmigo en el ámbito profesional." },
+                discord: { label: "Discord", description: "Charlemos sobre proyectos e ideas." },
+                phone: { label: "Teléfono", description: "Llámame directamente." },
+            },
             supportText:
                 "Si te gustan mis proyectos, también puedes apoyar futuras creaciones con un café.",
             supportButton: "Apoyar en Ko-fi",
@@ -1183,32 +1194,7 @@ function HomePage() {
                 </div>
             </section>
 
-            <section id="contact" className="section contact-section">
-                <div>
-                    <p className="eyebrow">{content.contact.eyebrow}</p>
-                    <h2>{content.contact.title}</h2>
-                    <p>{content.contact.description}</p>
-                    <p className="support-copy">{content.contact.supportText}</p>
-                </div>
-
-                <div className="contact-actions">
-                    <a
-                        className="button primary-button"
-                        href={CONTACT_MAILTO}
-                        aria-label={`Enviar correo a ${CONTACT_EMAIL}`}
-                    >
-                        {content.contact.button}
-                    </a>
-                    <a
-                        className="button kofi-button"
-                        href={KOFI_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        {content.contact.supportButton}
-                    </a>
-                </div>
-            </section>
+            <ContactSection text={content.contact} supportUrl={KOFI_URL} />
 
             <footer className="footer">
                 <span>{content.footer.copyright}</span>

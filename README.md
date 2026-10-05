@@ -1,5 +1,13 @@
 # React + Vite
 
+## Contacto
+
+Los datos públicos de contacto se editan en `src/contact.js`: correo, enlace de GitHub,
+LinkedIn, enlace de perfil o invitación de Discord y teléfono con prefijo internacional.
+Los campos opcionales vacíos no aparecen en la web. Usa enlaces completos (`https://...`)
+para los perfiles. La sección es accesible desde «Contacto» en el menú y está traducida
+al español y al inglés. Tras cambiar los datos, vuelve a compilar la web.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
